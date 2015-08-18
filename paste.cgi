@@ -2,13 +2,11 @@
 
 require './filemin-lib.pl';
 use Cwd 'abs_path';
-&switch_to_remote_user();
-
 &ReadParse();
 
 get_paths();
 
-$tmpdir = $home.'/.filemin';
+$tmpdir = "$remote_user_info[7]/.filemin";
 
 open(my $fh, "< $tmpdir/.buffer") or die "Error: $!";
 my @arr = <$fh>;

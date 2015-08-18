@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 
 require './filemin-lib.pl';
-&switch_to_remote_user();
 
 &ReadParse();
 
@@ -31,7 +30,7 @@ if (scalar(@errors) > 0) {
 } else {
     foreach $name (split(/\0/, $in{'name'})) {
 #        if(!chown $uid, $grid, $cwd.'/'.$name) {
-        if(system("chown $uid:$grid $cwd/$name $recursive") != 0) {
+        if(system("chown $recursive $uid:$grid $cwd/$name") != 0) {
             push @errors, "$name - $text{'error_chown'}: $?";
         }
     }

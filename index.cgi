@@ -5,69 +5,60 @@
 require './filemin-lib.pl';
 use lib './lib';
 use File::MimeInfo;
-use POSIX;
-use File::Basename;
-
-&switch_to_remote_user();
-&init_config();
+#use File::Basename;
 
 &ReadParse();
 
 get_paths();
 
-%access = &get_module_acl();
-use Data::Dumper;
-
 unless (opendir ( DIR, $cwd )) {
     $path="";
     print_errors("$text{'error_opendir'} $cwd $!");
 } else {
+#    &ui_print_header(undef, "Filemin", "");
+    &ui_print_header(undef, "Filemin", "", undef, 0 , 0, 0, "<a href='config.cgi?path=$path'>$text{'module_config'}</a>");
 
-    &ui_print_header(undef, "Filemin", "");
 ##########################################
-#---------LET DA BRAINF###ING BEGIN----------BANG
-#    print Dumper(\%access);
-    @allowed_paths = split(/\s+/, $access{'allowed_paths'});
-#    print Dumper(\@allowed_paths);
-
-    @list2 = readdir(DIR);
+#---------LET DA BRAINF###ING BEGIN----------
+    # Push file names with full paths to array, filtering out "." and ".."
+    @list = map { &simplify_path("$cwd/$_") } grep { $_ ne '.' && $_ ne '..' } readdir(DIR);
     closedir(DIR);
-    @list2 = sort(@list2);
-    $level = scalar(split("/", " $cwd"));
-#    print Dumper($level);
-    shift(@list2);
-    shift(@list2);
-    $cwd2 = $cwd;
-    $cwd2 =~ s/(.*)\/$//g;
-    @list2 = map {"$cwd2/$_"} @list2;
-#    @list2 = grep {$_ eq '/home' || $_ eq '/root' || $_ eq '/usr'} @list2;
-#    for $path
-#    my @list3 = ();
-    for $path(@allowed_paths) {
-        push @list3, grep {$path =~ /$_/ || $_ =~ /$path\//} @list2;
-    }
-    map {$_ =~ s/$cwd//} @list3;
-    @list = @list3;
 
-#    print '<pre>';
-#    print Dumper(\@list);
-#    print '</pre>';    
-#    exit();
+    # Filter out not allowed entries
+    if($remote_user_info[0] ne 'root' && $allowed_paths[0] ne '$ROOT') {
+        # Leave only allowed
+        for $path (@allowed_paths) {
+	    my $slashed = $path;
+	    $slashed .= "/" if ($slashed !~ /\/$/);
+            push @tmp_list, grep { $slashed =~ /^$_\// ||
+				   $_ =~ /$slashed/ } @list;
+        }
+        # Remove duplicates
+        my %hash = map { $_, 1 } @tmp_list;
+        @list = keys %hash;
+    }
+    # Get info about directory entries
+    @info = map { [ $_, stat($_), mimetype($_), -d $_ ] } @list;
+
+    # Filter out folders
+    @folders = map {$_} grep {$_->[15] == 1 } @info;
+
+    # Filter out files
+    @files = map {$_} grep {$_->[15] != 1 } @info;
+
+    # Sort stuff by name
+    @folders = sort { $a->[0] cmp $b->[0] } @folders;
+    @files = sort { $a->[0] cmp $b->[0] } @files;
+    
+    # Recreate list
+    undef(@list);
+    push @list, @folders, @files;
+
 #########################################
-#    opendir ( DIR, $cwd );
-#    @list = readdir(DIR);
-#    closedir(DIR);
-#    @list = sort(@list);
 
-    #remove '.' and '..' from file list
-#    shift(@list);
-#    shift(@list);
-
-    if ($current_theme eq 'authentic-theme' or $current_theme eq 'bootstrap') {
-        print_interface();
-    } else {
-        print_legacy_interface();
-    }
+    print_interface();
 
     &ui_print_footer("/", $text{'index'});
 }
+
+

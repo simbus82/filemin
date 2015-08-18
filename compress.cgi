@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 
 require './filemin-lib.pl';
-&switch_to_remote_user();
 &ReadParse();
 get_paths();
 
@@ -9,11 +8,22 @@ if(!$in{'arch'}) {
     &redirect("index.cgi?path=$path");
 }
 
-my $command = "tar czf $cwd/$in{'arch'}.tar.gz -C $cwd";
+my $command;
+
+if($in{'method'} eq 'tar') {
+    $command = "tar czf ".quotemeta("$cwd/$in{'arch'}.tar.gz").
+	       " -C ".quotemeta($cwd);
+} elsif($in{'method'} eq 'zip') {
+    $command = "cd ".quotemeta($cwd)." && zip -r ".
+	       quotemeta("$cwd/$in{'arch'}.zip");
+}
+
 foreach my $name(split(/\0/, $in{'name'}))
 {
     $name =~ s/$in{'cwd'}\///ig;
-    $command = "$command \"$name\"";
+    $command .= " ".quotemeta($name);
 }
-system($command);
+
+system_logged($command);
+
 &redirect("index.cgi?path=$path");

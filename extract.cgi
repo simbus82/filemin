@@ -4,7 +4,6 @@ require './filemin-lib.pl';
 use lib './lib';
 use File::MimeInfo;
 
-&switch_to_remote_user();
 &ReadParse();
 
 get_paths();
@@ -12,10 +11,12 @@ get_paths();
 $archive_type = mimetype($cwd.'/'.$in{'file'});
 
 if ($archive_type eq 'application/zip') {
-    &backquote_command("unzip $cwd/$in{'file'} -d $cwd");
+    &backquote_logged("unzip ".quotemeta("$cwd/$in{'file'}").
+		      " -d ".quotemeta($cwd));
     &redirect("index.cgi?path=$path");
 } elsif (index($archive_type, "tar") != -1) {
-    &backquote_command("tar xf $cwd/$in{'file'} -C $cwd");
+    &backquote_logged("tar xf ".quotemeta("$cwd/$in{'file'}").
+		      " -C ".quotemeta($cwd));
     &redirect("index.cgi?path=$path");
 } else {
     &ui_print_header(undef, "Filemin", "");

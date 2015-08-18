@@ -1,13 +1,11 @@
 #!/usr/bin/perl
 
 require './filemin-lib.pl';
-&switch_to_remote_user();
-
 &ReadParse();
 
 get_paths();
 
-$tmpdir = $home.'/.filemin';
+$tmpdir = "$remote_user_info[7]/.filemin";
 unless (-e $tmpdir) { mkdir $tmpdir or die "unable to create tmpdir $!"; }
 open(my $fh, ">", "$tmpdir/.buffer") or die "Error: $!";
 print $fh "cut\n";
